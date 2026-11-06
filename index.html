@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณเวลาทำงาน (Work Hours Calculator)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Custom number input hide arrows for sleek look */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-full flex flex-col">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <i class="fa-regular font-bold fa-clock text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 leading-tight">โปรแกรมคำนวณเวลาทำงาน</h1>
+                    <p class="text-xs text-slate-500">คำนวณชั่วโมงทำงานรวม สะดวกรวดเร็ว (สูงสุด 7 วัน)</p>
+                </div>
+            </div>
+            <button onclick="resetForm()" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition-colors">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>รีเซ็ตข้อมูล</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Form Section (Left Column in Desktop) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Action Bar -->
+            <div class="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="font-semibold text-slate-800 text-sm sm:text-base">รายการวันทำงาน</h2>
+                    <p class="text-xs text-slate-500">จำนวนวันทั้งหมด: <span id="day-count-badge" class="font-semibold text-blue-600">1</span> / 7 วัน</p>
+                </div>
+                <button id="add-day-btn" onclick="addDayRow()" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-lg shadow-sm transition-all hover:shadow duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>เพิ่มวันทำงาน</span>
+                </button>
+            </div>
+
+            <!-- Days Container -->
+            <div id="days-container" class="space-y-4">
+                <!-- Day rows will be dynamically inserted here -->
+            </div>
+
+            <!-- Helper Note -->
+            <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-4 text-xs text-blue-700 flex gap-3 items-start">
+                <i class="fa-solid fa-circle-info text-blue-500 text-base mt-0.5 shrink-0"></i>
+                <div class="space-y-1">
+                    <p class="font-medium">คำแนะนำเพิ่มเติม:</p>
+                    <ul class="list-disc list-inside space-y-0.5 text-blue-600/90">
+                        <li>กรณีทำงานกะดึกข้ามวัน (เช่น เข้า 22:00 ออก 06:00) ระบบจะคำนวณข้ามวันให้อัตโนมัติ</li>
+                        <li>ระบุเวลาเข้างานและออกงานเป็นชั่วโมง (0-23) และนาที (0-59)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary & Results Section (Right Column in Desktop) -->
+        <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Result Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden sticky top-24">
+                <div class="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-medium uppercase tracking-wider text-slate-400">สรุปเวลารวมทั้งหมด</span>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            รวม <span id="total-days-summary">1</span> วัน
+                        </span>
+                    </div>
+                    
+                    <!-- Total Display -->
+                    <div class="flex items-baseline gap-3 my-2">
+                        <div class="flex items-baseline gap-1">
+                            <span id="total-hours" class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">0</span>
+                            <span class="text-sm font-medium text-slate-400">ชม.</span>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="total-minutes" class="text-4xl sm:text-5xl font-extrabold tracking-tight text-blue-400">0</span>
+                            <span class="text-sm font-medium text-slate-400">นาที</span>
+                        </div>
+                    </div>
+                    
+                    <p id="total-decimal" class="text-xs text-slate-400 mt-2 font-mono">คิดเป็น: 0.00 ชั่วโมง</p>
+                </div>
+
+                <!-- Detailed Breakdown List -->
+                <div class="p-5 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">รายละเอียดรายวัน</h3>
+                    
+                    <div id="breakdown-list" class="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                        <!-- Breakdown items will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-blue-400"></i>
+        <span id="toast-message" class="text-sm font-medium">ข้อความแจ้งเตือน</span>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Preset Day Options
+        const DAY_OPTIONS = [
+            "วันจันทร์", 
+            "วันอังคาร", 
+            "วันพุธ", 
+            "วันพฤหัสบดี", 
+            "วันศุกร์", 
+            "วันเสาร์", 
+            "วันอาทิตย์"
+        ];
+
+        let dayCount = 0;
+        let dayIdCounter = 0;
+
+        // Initialize App on Load
+        window.onload = function() {
+            // Add initial 1 day
+            addDayRow();
+        };
+
+        // Function to create and add a new Day Row
+        function addDayRow() {
+            if (dayCount >= 7) {
+                showToast("เพิ่มได้สูงสุด 7 วันเท่านั้น", "warning");
+                return;
+            }
+
+            dayIdCounter++;
+            dayCount++;
+
+            // Select default day name based on dayCount
+            const defaultDayName = DAY_OPTIONS[(dayCount - 1) % 7];
+
+            const container = document.getElementById('days-container');
+            const rowDiv = document.createElement('div');
+            rowDiv.id = `day-row-${dayIdCounter}`;
+            rowDiv.className = "day-card bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-slate-300 duration-200 space-y-4";
+            
+            rowDiv.innerHTML = `
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <select onchange="calculateTotal()" class="day-select font-semibold text-slate-800 bg-transparent border-0 text-sm focus:ring-0 cursor-pointer p-0 pr-6 hover:text-blue-600">
+                            ${DAY_OPTIONS.map(day => `<option value="${day}" ${day === defaultDayName ? 'selected' : ''}>${day}</option>`).join('')}
+                            <option value="วันพิเศษ/โอที">วันพิเศษ / OT</option>
+                        </select>
+                    </div>
+                    <button onclick="removeDayRow(${dayIdCounter})" class="remove-btn text-slate-400 hover:text-rose-500 p-1 rounded-lg hover:bg-rose-50 transition-colors ${dayCount === 1 ? 'hidden' : ''}" title="ลบวันนี้">
+                        <i class="fa-regular fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Start Time -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-slate-500">เวลาเข้างาน</label>
+                        <div class="flex items-center gap-1.5">
+                            <div class="relative flex-1">
+                                <input type="number" min="0" max="23" placeholder="08" value="08" oninput="validateHour(this); calculateTotal();" 
+                                    class="start-hour w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-center focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                                <span class="text-[10px] text-slate-400 absolute right-2 top-2.5">ชม.</span>
+                            </div>
+                            <span class="text-slate-400 font-bold">:</span>
+                            <div class="relative flex-1">
+                                <input type="number" min="0" max="59" placeholder="00" value="00" oninput="validateMinute(this); calculateTotal();" 
+                                    class="start-minute w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-center focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                                <span class="text-[10px] text-slate-400 absolute right-2 top-2.5">นาที</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- End Time -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-medium text-slate-500">เวลาออกงาน</label>
+                        <div class="flex items-center gap-1.5">
+                            <div class="relative flex-1">
+                                <input type="number" min="0" max="23" placeholder="17" value="17" oninput="validateHour(this); calculateTotal();" 
+                                    class="end-hour w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-center focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                                <span class="text-[10px] text-slate-400 absolute right-2 top-2.5">ชม.</span>
+                            </div>
+                            <span class="text-slate-400 font-bold">:</span>
+                            <div class="relative flex-1">
+                                <input type="number" min="0" max="59" placeholder="00" value="00" oninput="validateMinute(this); calculateTotal();" 
+                                    class="end-minute w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-center focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                                <span class="text-[10px] text-slate-400 absolute right-2 top-2.5">นาที</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Result Display -->
+                <div class="pt-2 flex items-center justify-end text-xs border-t border-slate-50">
+                    <div class="text-slate-600 font-medium">
+                        เวลาทำงาน: <span class="row-total font-bold text-blue-600">9 ชม. 0 นาที</span>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(rowDiv);
+            updateUIState();
+            calculateTotal();
+        }
+
+        // Remove a specific Day Row
+        function removeDayRow(id) {
+            if (dayCount <= 1) return;
+            
+            const rowToRemove = document.getElementById(`day-row-${id}`);
+            if (rowToRemove) {
+                rowToRemove.remove();
+                dayCount--;
+                updateUIState();
+                calculateTotal();
+            }
+        }
+
+        // Update Buttons, Badges and Hide/Show Delete icons
+        function updateUIState() {
+            document.getElementById('day-count-badge').textContent = dayCount;
+            document.getElementById('total-days-summary').textContent = dayCount;
+
+            const addBtn = document.getElementById('add-day-btn');
+            if (dayCount >= 7) {
+                addBtn.disabled = true;
+            } else {
+                addBtn.disabled = false;
+            }
+
+            // Manage delete buttons visibility (if only 1 item left, hide delete button)
+            const removeBtns = document.querySelectorAll('.remove-btn');
+            removeBtns.forEach(btn => {
+                if (dayCount === 1) {
+                    btn.classList.add('hidden');
+                } else {
+                    btn.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Input Validations
+        function validateHour(input) {
+            let val = parseInt(input.value);
+            if (isNaN(val)) return;
+            if (val < 0) input.value = 0;
+            if (val > 23) input.value = 23;
+        }
+
+        function validateMinute(input) {
+            let val = parseInt(input.value);
+            if (isNaN(val)) return;
+            if (val < 0) input.value = 0;
+            if (val > 59) input.value = 59;
+        }
+
+        // Core Calculation Function
+        function calculateTotal() {
+            const rows = document.querySelectorAll('.day-card');
+            let grandTotalMinutes = 0;
+            const breakdownContainer = document.getElementById('breakdown-list');
+            breakdownContainer.innerHTML = '';
+
+            rows.forEach((row, index) => {
+                const dayName = row.querySelector('.day-select').value;
+                const startH = parseInt(row.querySelector('.start-hour').value) || 0;
+                const startM = parseInt(row.querySelector('.start-minute').value) || 0;
+                const endH = parseInt(row.querySelector('.end-hour').value) || 0;
+                const endM = parseInt(row.querySelector('.end-minute').value) || 0;
+
+                // Calculate Start & End in Minutes from midnight
+                let startTotalMin = (startH * 60) + startM;
+                let endTotalMin = (endH * 60) + endM;
+
+                // If End time is earlier than Start time, assume Overnight shift (+24 Hours / 1440 Mins)
+                if (endTotalMin < startTotalMin) {
+                    endTotalMin += (24 * 60);
+                }
+
+                // Total worked minutes
+                let workedMinutes = endTotalMin - startTotalMin;
+
+                // Daily Hours & Minutes
+                const dayHrs = Math.floor(workedMinutes / 60);
+                const dayMins = workedMinutes % 60;
+
+                // Update Row Display
+                const rowTotalDisplay = row.querySelector('.row-total');
+                rowTotalDisplay.textContent = `${dayHrs} ชม. ${dayMins} นาที`;
+
+                // Accumulate Grand Total
+                grandTotalMinutes += workedMinutes;
+
+                // Render Item in Summary Breakdown List
+                const breakdownItem = document.createElement('div');
+                breakdownItem.className = "flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-100";
+                breakdownItem.innerHTML = `
+                    <div class="font-medium text-slate-700 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <span>${dayName}</span>
+                        <span class="text-[10px] text-slate-400 font-normal">(${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')} - ${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')})</span>
+                    </div>
+                    <div class="font-semibold text-slate-800">
+                        ${dayHrs} <span class="text-slate-400 font-normal">ชม.</span> ${dayMins} <span class="text-slate-400 font-normal">นาที</span>
+                    </div>
+                `;
+                breakdownContainer.appendChild(breakdownItem);
+            });
+
+            // Calculate Final Grand Totals
+            const finalHours = Math.floor(grandTotalMinutes / 60);
+            const finalMinutes = grandTotalMinutes % 60;
+            const decimalHours = (grandTotalMinutes / 60).toFixed(2);
+
+            // Update UI Total Banner
+            document.getElementById('total-hours').textContent = finalHours;
+            document.getElementById('total-minutes').textContent = finalMinutes;
+            document.getElementById('total-decimal').textContent = `คิดเป็นประมาณ: ${decimalHours} ชั่วโมง`;
+        }
+
+        // Reset Form to initial state
+        function resetForm() {
+            document.getElementById('days-container').innerHTML = '';
+            dayCount = 0;
+            dayIdCounter = 0;
+            addDayRow();
+            showToast("รีเซ็ตข้อมูลเรียบร้อยแล้ว", "success");
+        }
+
+        // Helper Toast Notification
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = message;
+
+            if (type === "warning") {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+            } else if (type === "success") {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-info text-blue-400";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
